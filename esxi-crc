@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Function to extract CRC error count
+get_crc_errors() {
+    interface=$1
+    # Extract the CRC error count
+    errors=$(esxcli network nic stats get -n $interface | grep 'CRC errors')
+    echo "$errors"
+}
+
+# Function to log CRC error status
+log_crc_status() {
+    interface=$1
+    errors=$2
+    crc_count=$(echo "$errors" | awk '{print $NF}')
+    if [ "$crc_count" -gt 0 ]; then
+        logger -t crc_monitor "CRCs are incrementing on $interface: $errors"
+    else
+        logger -t crc_monitor "No CRC errors detected on $interface"
+    fi
+}
+
+# Check CRC errors for vmnic0
+crc_errors_vmnic0=$(get_crc_errors vmnic0)
+log_crc_status vmnic0 "$crc_errors_vmnic0"
+
+# Check CRC errors for vmnic1
+crc_errors_vmnic1=$(get_crc_errors vmnic1)
+log_crc_status vmnic1 "$crc_errors_vmnic1"
